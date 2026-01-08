@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVREC Grading Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div id="auth-view" class="min-h-screen flex items-center justify-center p-4 bg-slate-900">
+        <div class="glass w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row fade-in">
+            
+            <div class="md:w-5/12 bg-yellow-500 p-8 flex flex-col justify-center items-center text-center relative overflow-hidden">
+                <div class="absolute inset-0 bg-yellow-400 opacity-50 transform rotate-12 scale-150"></div>
+                <div class="relative z-10">
+                    <i class="fa-solid fa-graduation-cap text-5xl text-slate-900 mb-4"></i>
+                    <h1 class="text-4xl font-black text-slate-900 tracking-tighter">SVREC</h1>
+                    <p class="text-slate-800 font-bold mt-2">Evaluation Portal</p>
+                    <div class="mt-8 flex flex-col gap-2 text-xs font-mono bg-yellow-600/20 p-3 rounded text-slate-900 text-left">
+                        <div><i class="fa-solid fa-lock"></i> Subject-Locked Login</div>
+                        <div><i class="fa-solid fa-qrcode"></i> Smart QR Access</div>
+                        <div><i class="fa-solid fa-star"></i> Live Grading System</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:w-7/12 p-8 bg-white">
+                
+                <div class="flex bg-slate-100 p-1 rounded-lg mb-6">
+                    <button onclick="switchRole('student')" id="btn-role-stu" class="flex-1 py-2 text-sm font-bold rounded bg-white shadow text-slate-900 transition">Student</button>
+                    <button onclick="switchRole('faculty')" id="btn-role-fac" class="flex-1 py-2 text-sm font-bold rounded text-gray-500 hover:text-slate-900 transition">Faculty</button>
+                </div>
+
+                <div id="form-student" class="space-y-4">
+                    <h2 class="text-xl font-bold mb-4">Student Login</h2>
+                    <input type="text" id="stu-roll" placeholder="Roll Number (e.g. 21A91A0501)" class="w-full p-3 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-yellow-400 uppercase font-bold">
+                    <button onclick="loginStudent()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition">
+                        Check Assignments & Grades
+                    </button>
+                </div>
+
+                <div id="form-faculty" class="hidden space-y-4">
+                    <h2 class="text-xl font-bold mb-4">Faculty Login</h2>
+                    <input type="text" id="fac-id" placeholder="Faculty ID" class="w-full p-3 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-yellow-400">
+                    <input type="password" id="fac-pass" placeholder="Password" class="w-full p-3 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-yellow-400">
+                    
+                    <button onclick="loginFaculty()" class="w-full bg-yellow-500 text-slate-900 font-bold py-3 rounded-lg hover:bg-yellow-400 transition shadow-lg">
+                        Login to Grade
+                    </button>
+                    
+                    <div class="text-center mt-4">
+                        <button onclick="toggleRegModal(true)" class="text-sm text-blue-600 font-bold hover:underline">Register New Faculty</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="reg-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md relative fade-in">
+            <button onclick="toggleRegModal(false)" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <h2 class="text-2xl font-bold mb-1">Faculty Registration</h2>
+            <p class="text-xs text-gray-500 mb-4">Account locked to specific subject.</p>
+            
+            <div class="space-y-3">
+                <input type="text" id="reg-name" placeholder="Full Name" class="w-full p-2 border rounded">
+                <input type="text" id="reg-id" placeholder="Create ID" class="w-full p-2 border rounded">
+                
+                <label class="block text-xs font-bold uppercase text-gray-500 mt-2">Select Your Subject</label>
+                <select id="reg-sub" class="w-full p-2 border rounded bg-yellow-50 border-yellow-200 font-bold text-slate-700">
+                    <option value="OS">Operating Systems (OS)</option>
+                    <option value="DBMS">DBMS</option>
+                    <option value="MEFA">MEFA</option>
+                    <option value="SE">Software Engineering</option>
+                    <option value="DTI">Design Thinking (DTI)</option>
+                </select>
+
+                <input type="password" id="reg-pass" placeholder="Create Password" class="w-full p-2 border rounded">
+                <button onclick="registerFaculty()" class="w-full bg-green-600 text-white font-bold py-2 rounded hover:bg-green-700 mt-2">Create Account</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="student-view" class="hidden min-h-screen pb-20">
+        <nav class="bg-white sticky top-0 z-40 border-b px-6 py-3 flex justify-between items-center shadow-sm">
+            <div class="font-bold text-xl tracking-tight">SVREC <span class="text-yellow-500">Student</span></div>
+            <div class="flex gap-4 items-center">
+                <span id="nav-stu-roll" class="font-mono bg-gray-100 px-2 py-1 rounded text-xs font-bold">--</span>
+                <button onclick="logout()" class="text-red-500 hover:bg-red-50 p-2 rounded-full"><i class="fa-solid fa-power-off"></i></button>
+            </div>
+        </nav>
+
+        <div class="max-w-5xl mx-auto mt-8 px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <div class="md:col-span-2 space-y-6">
+                <h3 class="font-bold text-xl text-slate-800"><i class="fa-solid fa-book-open mr-2 text-yellow-500"></i> Open Assignments</h3>
+                <div id="question-feed" class="space-y-4"></div>
+                <div id="no-questions" class="hidden text-center py-10 text-gray-400 bg-white rounded-xl border border-dashed">No active questions.</div>
+            </div>
+
+            <div class="md:col-span-1">
+                <div class="bg-white p-5 rounded-xl shadow-sm border h-full">
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-award text-blue-500"></i> My Grades</h3>
+                    <div id="stu-history" class="space-y-3 text-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="faculty-view" class="hidden min-h-screen pb-20 bg-slate-50">
+        <nav class="bg-slate-900 text-white sticky top-0 z-40 px-6 py-4 flex justify-between items-center shadow-lg">
+            <div class="flex items-center gap-3">
+                <div class="bg-yellow-500 text-slate-900 font-bold px-3 py-1 rounded text-sm">GRADING</div>
+                <h2 class="font-bold text-lg"><span id="nav-fac-sub" class="text-yellow-400">--</span> Dashboard</h2>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <div id="nav-fac-name" class="font-bold text-sm">Professor</div>
+                    <div class="text-[10px] text-gray-400 uppercase">ID: <span id="nav-fac-id">--</span></div>
+                </div>
+                <button onclick="logout()" class="bg-slate-700 hover:bg-red-600 p-2 rounded-full transition"><i class="fa-solid fa-power-off"></i></button>
+            </div>
+        </nav>
+
+        <div class="max-w-7xl mx-auto mt-8 px-4 grid grid-cols-1 lg:grid-cols-4 gap-8">
+            
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden sticky top-24">
+                    <div class="bg-slate-800 p-4 text-white font-bold flex justify-between items-center">
+                        <span>Post Question</span>
+                        <i class="fa-solid fa-paper-plane text-yellow-500"></i>
+                    </div>
+                    <div class="p-4">
+                        <form onsubmit="postQuestion(event)">
+                            <div class="mb-3">
+                                <label class="text-[10px] font-bold text-gray-500 uppercase">Description</label>
+                                <textarea id="q-text" rows="3" required class="w-full p-2 border rounded bg-gray-50 text-sm focus:ring-1 focus:ring-yellow-400 outline-none"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="text-[10px] font-bold text-gray-500 uppercase">Due Date</label>
+                                <input type="datetime-local" id="q-date" required class="w-full p-2 border rounded bg-gray-50 text-xs">
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 text-sm">Broadcast</button>
+                        </form>
+                    </div>
+                    <div class="p-4 border-t bg-gray-50">
+                        <h4 class="font-bold text-xs text-gray-500 uppercase mb-2">My Active Links</h4>
+                        <div id="fac-posts-list" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3">
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <h3 class="text-2xl font-bold text-slate-800">Student Submissions</h3>
+                        <p class="text-sm text-gray-500">Review files and assign marks.</p>
+                    </div>
+                    <div class="text-sm font-bold bg-white px-3 py-1 rounded border shadow-sm">
+                        Subject Locked: <span id="display-filter-sub" class="text-blue-600">--</span>
+                    </div>
+                </div>
+
+                <div id="submission-list" class="space-y-4"></div>
+                
+                <div id="fac-empty" class="hidden py-16 text-center text-gray-400 bg-white rounded-xl border border-dashed">
+                    <i class="fa-solid fa-clipboard-check text-4xl mb-3 opacity-30"></i>
+                    <p>All caught up! No pending submissions.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="qr-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center relative animate-bounce-in">
+            <button onclick="document.getElementById('qr-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <h2 class="text-xl font-black text-slate-900 mb-1">SCAN FOR ASSIGNMENT</h2>
+            <div class="bg-white p-2 border-4 border-slate-900 rounded-xl inline-block my-4">
+                <img id="qr-image" src="" alt="QR Code" class="w-40 h-40 object-contain">
+            </div>
+            <div class="bg-yellow-100 text-yellow-800 text-xs font-bold p-2 rounded">
+                Subject: <span id="qr-sub"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- STORAGE KEYS ---
+        const DB_USERS = 'svrec_grade_users';
+        const DB_QUESTIONS = 'svrec_grade_questions'; 
+        const DB_SUBMISSIONS = 'svrec_grade_subs';
+
+        let currentSession = null;
+
+        // --- 1. AUTH LOGIC ---
+        function switchRole(role) {
+            document.getElementById('form-student').classList.toggle('hidden', role !== 'student');
+            document.getElementById('form-faculty').classList.toggle('hidden', role !== 'faculty');
+            
+            const activeClass = "flex-1 py-2 text-sm font-bold rounded bg-white shadow text-slate-900 transition";
+            const inactiveClass = "flex-1 py-2 text-sm font-bold rounded text-gray-500 hover:text-slate-900 transition";
+            
+            document.getElementById('btn-role-stu').className = role === 'student' ? activeClass : inactiveClass;
+            document.getElementById('btn-role-fac').className = role === 'faculty' ? activeClass : inactiveClass;
+        }
+
+        function toggleRegModal(show) { document.getElementById('reg-modal').classList.toggle('hidden', !show); }
+
+        async function registerFaculty() {
+            const name = document.getElementById('reg-name').value;
+            const id = document.getElementById('reg-id').value;
+            const sub = document.getElementById('reg-sub').value;
+            const pass = document.getElementById('reg-pass').value;
+
+            if(!name || !id || !pass) return alert("Fill all fields");
+
+            const users = JSON.parse(localStorage.getItem(DB_USERS)) || [];
+            if(users.find(u => u.id === id)) return alert("ID Exists!");
+
+            users.push({ name, id, sub, pass: btoa(pass) }); // Simple Base64 for demo
+            localStorage.setItem(DB_USERS, JSON.stringify(users));
+            
+            alert(`✅ Registered as ${sub} Faculty!`);
+            toggleRegModal(false);
+        }
+
+        function loginFaculty() {
+            const id = document.getElementById('fac-id').value;
+            const pass = document.getElementById('fac-pass').value;
+            const users = JSON.parse(localStorage.getItem(DB_USERS)) || [];
+            const user = users.find(u => u.id === id && u.pass === btoa(pass));
+
+            if(user) {
+                currentSession = { role: 'faculty', ...user };
+                loadFacultyDashboard();
+            } else {
+                alert("Invalid Credentials");
+            }
+        }
+
+        function loginStudent() {
+            const roll = document.getElementById('stu-roll').value.trim().toUpperCase();
+            if(roll.length < 5) return alert("Invalid Roll No");
+            currentSession = { role: 'student', id: roll };
+            loadStudentDashboard();
+        }
+        function logout() { location.reload(); }
+
+
+        // --- 2. FACULTY DASHBOARD (WITH GRADING) ---
+        function loadFacultyDashboard() {
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('faculty-view').classList.remove('hidden');
+
+            document.getElementById('nav-fac-name').innerText = currentSession.name;
+            document.getElementById('nav-fac-id').innerText = currentSession.id;
+            document.getElementById('nav-fac-sub').innerText = currentSession.sub; 
+            document.getElementById('display-filter-sub').innerText = currentSession.sub;
+
+            renderFacultyPosts();
+            renderIncomingSubmissions();
+        }
+
+        function postQuestion(e) {
+            e.preventDefault();
+            const text = document.getElementById('q-text').value;
+            const date = document.getElementById('q-date').value;
+            
+            const newQ = {
+                id: Date.now(),
+                facId: currentSession.id,
+                subject: currentSession.sub, // Locked Subject
+                text: text,
+                deadline: date
+            };
+
+            const questions = JSON.parse(localStorage.getItem(DB_QUESTIONS)) || [];
+            questions.push(newQ);
+            localStorage.setItem(DB_QUESTIONS, JSON.stringify(questions));
+
+            alert("✅ Question Broadcasted!");
+            e.target.reset();
+            renderFacultyPosts();
+            showQR(newQ.id, newQ.subject);
+        }
+
+        function renderFacultyPosts() {
+            const list = document.getElementById('fac-posts-list');
+            const allQ = JSON.parse(localStorage.getItem(DB_QUESTIONS)) || [];
+            const myQ = allQ.filter(q => q.facId === currentSession.id).sort((a,b) => b.id - a.id);
+
+            list.innerHTML = '';
+            myQ.forEach(q => {
+                list.innerHTML += `
+                    <div class="p-2 border rounded text-xs flex justify-between items-center group hover:bg-blue-50 cursor-pointer" onclick="showQR(${q.id}, '${q.subject}')">
+                        <div class="truncate w-3/4 font-medium">${q.text}</div>
+                        <i class="fa-solid fa-qrcode text-blue-500"></i>
+                    </div>
+                `;
+            });
+        }
+
+        function showQR(qid, sub) {
+            const data = `SVREC_ID:${qid}_SUB:${sub}`;
+            const url = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data)}`;
+            document.getElementById('qr-image').src = url;
+            document.getElementById('qr-sub').innerText = sub;
+            document.getElementById('qr-modal').classList.remove('hidden');
+        }
+
+        function renderIncomingSubmissions() {
+            const list = document.getElementById('submission-list');
+            const allSubs = JSON.parse(localStorage.getItem(DB_SUBMISSIONS)) || [];
+            // FILTER BY LOCKED SUBJECT
+            const mySubs = allSubs.filter(s => s.subject === currentSession.sub).sort((a,b) => b.id - a.id);
+
+            if(mySubs.length === 0) {
+                document.getElementById('fac-empty').classList.remove('hidden');
+                list.innerHTML = ''; return;
+            }
+            document.getElementById('fac-empty').classList.add('hidden');
+
+            list.innerHTML = '';
+            mySubs.forEach(s => {
+                const isGraded = s.marks !== undefined && s.marks !== null;
+
+                list.innerHTML += `
+                    <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div class="w-full sm:w-1/2">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="bg-slate-800 text-white text-[10px] px-2 py-0.5 rounded font-mono font-bold">${s.roll}</span>
+                                <span class="text-xs text-gray-500">${s.timestamp}</span>
+                            </div>
+                            <h4 class="font-bold text-slate-800 text-lg leading-tight">${s.stuName}</h4>
+                            <a href="${s.fileData}" download="${s.fileName}" class="text-blue-600 text-sm hover:underline font-semibold mt-1 inline-block">
+                                <i class="fa-solid fa-paperclip"></i> ${s.fileName}
+                            </a>
+                        </div>
+
+                        <div class="w-full sm:w-1/2 flex justify-end">
+                            ${!isGraded ? `
+                                <div class="flex items-center gap-2 bg-yellow-50 p-2 rounded border border-yellow-200">
+                                    <span class="text-xs font-bold text-yellow-700 uppercase mr-2">Grade:</span>
+                                    <input type="number" id="grade-inp-${s.id}" min="0" max="100" class="w-16 p-2 text-center border rounded font-bold outline-none focus:border-blue-500" placeholder="0-100">
+                                    <button onclick="saveGrade(${s.id})" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold hover:bg-blue-700">POST</button>
+                                </div>
+                            ` : `
+                                <div class="text-right">
+                                    <div class="text-3xl font-black text-green-600">${s.marks}</div>
+                                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Score Assigned</div>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- CORE FUNCTION: SAVE GRADE ---
+        function saveGrade(subId) {
+            const input = document.getElementById(`grade-inp-${subId}`);
+            const score = input.value;
+
+            if(score === "" || score < 0 || score > 100) return alert("Please enter a valid score (0-100)");
+
+            let allSubs = JSON.parse(localStorage.getItem(DB_SUBMISSIONS)) || [];
+            // Update specific submission
+            const index = allSubs.findIndex(s => s.id === subId);
+            if(index !== -1) {
+                allSubs[index].marks = score;
+                localStorage.setItem(DB_SUBMISSIONS, JSON.stringify(allSubs));
+                // Refresh UI to show the new grade state
+                renderIncomingSubmissions();
+            }
+        }
+
+
+        // --- 3. STUDENT DASHBOARD ---
+        function loadStudentDashboard() {
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('student-view').classList.remove('hidden');
+            document.getElementById('nav-stu-roll').innerText = currentSession.id;
+
+            renderQuestionFeed();
+            renderStudentHistory();
+        }
+
+        function renderQuestionFeed() {
+            const feed = document.getElementById('question-feed');
+            const questions = JSON.parse(localStorage.getItem(DB_QUESTIONS)) || [];
+            questions.sort((a,b) => b.id - a.id);
+
+            if(questions.length === 0) {
+                document.getElementById('no-questions').classList.remove('hidden'); return;
+            }
+
+            feed.innerHTML = '';
+            questions.forEach(q => {
+                let color = "bg-gray-100";
+                if(q.subject === 'OS') color = "bg-red-100 text-red-800";
+                if(q.subject === 'DBMS') color = "bg-blue-100 text-blue-800";
+                if(q.subject === 'MEFA') color = "bg-purple-100 text-purple-800";
+
+                feed.innerHTML += `
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="${color} px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide">${q.subject}</span>
+                            <span class="text-xs text-gray-400">Due: ${new Date(q.deadline).toLocaleDateString()}</span>
+                        </div>
+                        <p class="text-slate-800 font-medium mb-4">${q.text}</p>
+                        
+                        <form onsubmit="submitAnswer(event, ${q.id}, '${q.subject}')" class="flex gap-2 items-center">
+                            <input type="text" id="ans-name-${q.id}" placeholder="Your Name" required class="flex-1 p-2 border rounded text-sm bg-gray-50">
+                            <input type="file" id="ans-file-${q.id}" required class="text-sm w-32 file:mr-1 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-200 file:text-xs">
+                            <button type="submit" class="bg-slate-900 text-white px-4 py-2 rounded text-xs font-bold hover:bg-black">Submit</button>
+                        </form>
+                    </div>
+                `;
+            });
+        }
+
+        function submitAnswer(e, qId, subject) {
+            e.preventDefault();
+            const name = document.getElementById(`ans-name-${qId}`).value;
+            const fileInput = document.getElementById(`ans-file-${qId}`);
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const sub = {
+                    id: Date.now(),
+                    qId: qId,
+                    roll: currentSession.id,
+                    stuName: name,
+                    subject: subject,
+                    fileName: fileInput.files[0].name,
+                    fileData: evt.target.result,
+                    timestamp: new Date().toLocaleString(),
+                    marks: null // Initialize as null
+                };
+
+                const subs = JSON.parse(localStorage.getItem(DB_SUBMISSIONS)) || [];
+                subs.push(sub);
+                localStorage.setItem(DB_SUBMISSIONS, JSON.stringify(subs));
+
+                alert("✅ Assignment Submitted!");
+                renderStudentHistory();
+            };
+            if(fileInput.files[0]) reader.readAsDataURL(fileInput.files[0]);
+        }
+
+        function renderStudentHistory() {
+            const list = document.getElementById('stu-history');
+            const allSubs = JSON.parse(localStorage.getItem(DB_SUBMISSIONS)) || [];
+            const mySubs = allSubs.filter(s => s.roll === currentSession.id).sort((a,b)=>b.id-a.id);
+            
+            list.innerHTML = '';
+            mySubs.forEach(s => {
+                // Logic to display score or 'Pending'
+                const gradeDisplay = s.marks 
+                    ? `<span class="text-green-600 font-bold text-lg">${s.marks}</span><span class="text-[10px] text-gray-400">/100</span>` 
+                    : `<span class="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-1 rounded">PENDING</span>`;
+
+                list.innerHTML += `
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-3 last:border-0">
+                        <div>
+                            <div class="font-bold text-slate-700 text-sm">${s.subject}</div>
+                            <div class="text-xs text-gray-400 mt-0.5">${s.fileName}</div>
+                        </div>
+                        <div class="text-right">
+                            ${gradeDisplay}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
